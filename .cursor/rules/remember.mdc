@@ -1,0 +1,19 @@
+---
+description: Save reusable agent learnings into /home/tan/agent-learning.
+alwaysApply: false
+---
+
+# Remember Learning
+
+When the user asks to remember, learn, save this, or persist a reusable insight,
+follow the canonical workflow in:
+
+`/home/tan/agent-learning/.agents/skills/remember/SKILL.md`
+
+Save Markdown notes only under `/home/tan/agent-learning/learnings/`. Use the
+helper script and pass the current Cursor identity:
+
+`Cursor Agent <cursor-agent@cursor.com>`
+
+Do not store secrets or raw conversation dumps. Commit saved notes with the
+matching `Co-authored-by:` trailer and report the saved file path.
