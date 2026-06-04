@@ -1,9 +1,10 @@
 # Agent Learning Instructions
 
-When the user asks to remember, learn, save a note, or persist a useful insight:
+当用户要求 remember、learn、save a note、记住、学习或保存经验时：
 
-- Use `.agents/skills/remember/SKILL.md` as the canonical workflow.
-- Save notes only under `/home/tan/agent-learning/learnings/`.
-- Include the current agent identity in the note and in the git commit trailer.
-- Do not store secrets, credentials, private keys, or unrelated conversation text.
-- Keep each note focused on one reusable learning.
+- 使用 `.agents/skills/remember/SKILL.md` 作为 canonical workflow。
+- 学习笔记只保存到 `/home/tan/agent-learning/learnings/`。
+- 学习笔记使用中文记录。
+- 在笔记和 git commit trailer 中标识当前 Agent。
+- 不要保存 secrets、credentials、private keys 或无关的原始对话。
+- 每条笔记只记录一个可复用经验。

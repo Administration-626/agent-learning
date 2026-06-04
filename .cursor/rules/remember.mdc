@@ -1,19 +1,27 @@
 ---
-description: Save reusable agent learnings into /home/tan/agent-learning.
+description: Save Chinese learning notes into /home/tan/agent-learning.
 alwaysApply: false
 ---
 
 # Remember Learning
 
-When the user asks to remember, learn, save this, or persist a reusable insight,
-follow the canonical workflow in:
+When the user asks to remember, learn, save this, 记住, 学习, or 保存经验, save one reusable learning to:
 
-`/home/tan/agent-learning/.agents/skills/remember/SKILL.md`
+`/home/tan/agent-learning/learnings/`
 
-Save Markdown notes only under `/home/tan/agent-learning/learnings/`. Use the
-helper script and pass the current Cursor identity:
+Rules:
 
-`Cursor Agent <cursor-agent@cursor.com>`
+- Write the learning note in Chinese.
+- Use the existing `learnings/` folder only.
+- Do not create extra folders like `patterns/`, `notes/`, or `skills/`.
+- Do not store secrets or raw conversation dumps.
+- Use the canonical helper script:
 
-Do not store secrets or raw conversation dumps. Commit saved notes with the
-matching `Co-authored-by:` trailer and report the saved file path.
+```bash
+node /home/tan/agent-learning/.agents/skills/remember/scripts/save-learning.mjs \
+  --title "{topic}" \
+  --agent "Cursor Agent <cursor-agent@cursor.com>" \
+  --commit
+```
+
+After saving, report the saved file path and commit hash.

@@ -1,63 +1,43 @@
 ---
 name: remember
-description: Save durable technical learnings, bug fixes, architectural decisions, and workflow insights into /home/tan/agent-learning/learnings. Use when the user says remember, learn, save this, /remember, or asks to persist a reusable insight for future agents.
+description: Save a Chinese learning note to /home/tan/agent-learning/learnings. Use when the user says remember, learn, save this, /remember, 记住, 学习, or 保存经验.
+argument-hint: "[topic: description of the learning]"
 ---
 
 # Remember
 
-## Goal
+Save the current learning to the git-backed memory repo:
 
-Persist one reusable learning into `/home/tan/agent-learning/learnings/` so Codex,
-Claude Code, Gemini CLI, Cursor, and future agents can read it as plain Markdown.
+`/home/tan/agent-learning`
 
-## When To Use
+The learning comes from the user's request and the current conversation.
 
-Use this skill when:
+Instructions:
 
-- The user says "remember", "learn", "save this", or `/remember`.
-- A bug root cause, debugging method, architecture decision, command, or workflow
-  should be reused later.
-- A completed task produced a durable lesson that is broader than one code diff.
+1. Parse the topic from the input. If the input has `topic: content`, use the text before `:` as the topic. Otherwise generate a concise topic from the content.
+2. IMPORTANT: Always save to the existing `learnings/` folder. Do not create new folders like `patterns/`, `notes/`, `skills/`, etc.
+3. Create a new file at `/home/tan/agent-learning/learnings/{YYYY-MM-DD}-{topic-slug}.md`.
+4. Write the learning note in Chinese. Format it with:
+   - Title as H1
+   - Date
+   - Agent
+   - Project context if relevant
+   - Background / Problem / Solution / Pitfalls sections
+5. Commit locally with the current agent identity in `Co-authored-by:`. Do not push unless the user explicitly asks.
+6. Confirm what was saved and show the saved file path plus commit hash.
 
-Do not use this skill for secrets, credentials, private keys, or full raw
-conversation dumps.
+Use the helper script to avoid filename, formatting, and commit-message mistakes:
 
-## Workflow
+```bash
+node /home/tan/agent-learning/.agents/skills/remember/scripts/save-learning.mjs \
+  --title "{topic}" \
+  --agent "{Current Agent <email>}" \
+  --commit
+```
 
-1. Extract one focused learning from the conversation.
-2. Choose a concise title and slug-worthy topic.
-3. Identify the current agent for the note and git trailer.
-4. Write a Markdown note with these sections:
-   - Context
-   - Problem
-   - Solution
-   - Pitfalls
-5. Save and commit through the helper script.
-6. Report the saved file path and commit hash.
-
-## Agent Identity
-
-Pass the actual current agent identity to `--agent`. Defaults:
+Known agent identities:
 
 - Codex: `Codex <codex@openai.com>`
 - Claude Code: `Claude Code <claude-code@anthropic.com>`
 - Gemini CLI: `Gemini CLI <gemini-cli@google.com>`
 - Cursor Agent: `Cursor Agent <cursor-agent@cursor.com>`
-
-If the current agent is different, use its visible product/model identity and a
-reasonable no-reply style email.
-
-## Save Command
-
-Provide the note body on stdin:
-
-```bash
-node /home/tan/agent-learning/.agents/skills/remember/scripts/save-learning.mjs \
-  --title "Short learning title" \
-  --agent "Codex <codex@openai.com>" \
-  --commit
-```
-
-The script creates `learnings/{YYYY-MM-DD}-{topic-slug}.md`, formats the note,
-and commits only that note. Use `--dry-run` first if the title, path, or commit
-message needs checking.
