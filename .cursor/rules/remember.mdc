@@ -1,27 +1,11 @@
 ---
-description: Save Chinese learning notes into /home/tan/agent-learning.
+description: Save Chinese learning notes into the learnings folder.
 alwaysApply: false
 ---
 
 # Remember Learning
 
-When the user asks to remember, learn, save this, 记住, 学习, or 保存经验, save one reusable learning to:
+This is a proxy rule. When the user asks to remember or save a learning, you MUST first read the universal workflow instructions at:
+`~/.agents/skills/remember/SKILL.md`
 
-`/home/tan/agent-learning/learnings/`
-
-Rules:
-
-- Write the learning note in Chinese.
-- Use the existing `learnings/` folder only.
-- Do not create extra folders like `patterns/`, `notes/`, or `skills/`.
-- Do not store secrets or raw conversation dumps.
-- Use the canonical helper script:
-
-```bash
-node /home/tan/agent-learning/.agents/skills/remember/scripts/save-learning.mjs \
-  --title "{topic}" \
-  --agent "Cursor Agent <cursor-agent@cursor.com>" \
-  --commit
-```
-
-After saving, report the saved file path and commit hash.
+Strictly follow the instructions in that file to pipe the learning content via standard input (Here-Document) to the helper script. Do not invent your own execution steps.

@@ -1,6 +1,6 @@
 ---
 name: remember
-description: Save a Chinese learning note to /home/tan/agent-learning/learnings. Use when the user says remember, learn, save this, /remember, 记住, 学习, or 保存经验.
+description: Save a Chinese learning note to the learnings folder. Use when the user says remember, learn, save this, /remember, 记住, 学习, or 保存经验.
 argument-hint: "[topic: description of the learning]"
 ---
 
@@ -16,28 +16,33 @@ Instructions:
 
 1. Parse the topic from the input. If the input has `topic: content`, use the text before `:` as the topic. Otherwise generate a concise topic from the content.
 2. IMPORTANT: Always save to the existing `learnings/` folder. Do not create new folders like `patterns/`, `notes/`, `skills/`, etc.
-3. Create a new file at `/home/tan/agent-learning/learnings/{YYYY-MM-DD}-{topic-slug}.md`.
-4. Write the learning note in Chinese. Format it with:
-   - Title as H1
-   - Date
-   - Agent
-   - Project context if relevant
-   - Background / Problem / Solution / Pitfalls sections
-5. Commit locally with the current agent identity in `Co-authored-by:`. Do not push unless the user explicitly asks.
-6. Confirm what was saved and show the saved file path plus commit hash.
-
-Use the helper script to avoid filename, formatting, and commit-message mistakes:
+3. Do NOT manually create or write the file. You must strictly use the helper script via a bash Here-Document to pipe the markdown content (Background / Problem / Solution / Pitfalls) into the script. The script will automatically generate the file, filename, Date, and Agent headers.
+4. Execute the following bash command, replacing the placeholders with actual content. Ensure the title is plain text without unescaped quotes:
 
 ```bash
-node /home/tan/agent-learning/.agents/skills/remember/scripts/save-learning.mjs \
-  --title "{topic}" \
-  --agent "{Current Agent <email>}" \
-  --commit
+cat << 'EOF' | node ~/.agents/skills/remember/scripts/save-learning.mjs --title "{topic}" --agent "{Current Agent <email>}" --commit
+## 背景 (Background)
+...
+
+## 问题 (Problem)
+...
+
+## 解决方案 (Solution)
+...
+
+## 避坑指南 (Pitfalls)
+...
+EOF
 ```
 
-Known agent identities:
+5. Confirm what was saved using the script's stdout output (it will print the file path and commit hash). Do not push unless the user explicitly asks.
 
+Known agent identities (use the exact format `Name <email>`):
+
+- Antigravity: `Antigravity <antigravity@google.com>`
 - Codex: `Codex <codex@openai.com>`
 - Claude Code: `Claude Code <claude-code@anthropic.com>`
 - Gemini CLI: `Gemini CLI <gemini-cli@google.com>`
 - Cursor Agent: `Cursor Agent <cursor-agent@cursor.com>`
+
+If your agent name is not in this list, use your system prompt identity to format it as `Your Name <your-name@local.agent>`.

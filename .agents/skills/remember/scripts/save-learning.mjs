@@ -4,8 +4,22 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
-const repoRoot = '/home/tan/agent-learning';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const getRepoRoot = () => {
+  const result = spawnSync('git', ['rev-parse', '--show-toplevel'], {
+    cwd: __dirname,
+    encoding: 'utf8'
+  });
+  if (result.status !== 0) {
+    throw new Error('Could not determine git repository root.');
+  }
+  return result.stdout.trim();
+};
+
+const repoRoot = getRepoRoot();
 const learningsDir = path.join(repoRoot, 'learnings');
 
 function usage() {

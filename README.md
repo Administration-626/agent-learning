@@ -83,7 +83,7 @@ Claude Code 会通过 `~/.claude/skills/remember` 入口进入本仓库的 remem
 
 ### Cursor
 
-在这个仓库里使用 Cursor 时，Cursor 会通过 `.cursor/rules/remember.mdc` 读取 remember 规则。
+在使用 Cursor 时，Cursor 会通过 `.cursor/rules/remember.mdc` 代理规则读取 remember 配置。
 
 可以直接说：
 
@@ -91,7 +91,7 @@ Claude Code 会通过 `~/.claude/skills/remember` 入口进入本仓库的 remem
 remember 这次的经验：...
 ```
 
-如果想让 Cursor 在其他项目里也使用同一套规则，需要把类似规则放到 Cursor User Rules，或者在对应项目里添加 `.cursor/rules/remember.mdc`。
+如果想让 Cursor 在其他项目里也使用同一套规则，只需将这里的代理规则文件复制/链接到其他项目中，或者放到全局 Cursor User Rules 中。无论在哪个目录下触发，代理规则都会通过软链接精准指向 `~/.agents/...` 中的全局通用流程。
 
 ## 安装
 
@@ -138,10 +138,10 @@ ln -s "$AGENT_LEARNING_DIR/.agents/skills/remember" ~/.gemini/skills/remember
 - `README.md`：说明这个仓库的用途、目录结构、安装方式和使用方式。
 - `learnings/`：唯一的知识存储目录。所有 Agent 保存的学习笔记都应该放在这里。
 - `learnings/*.md`：单条学习笔记。每个文件记录一个可复用经验，例如 bug 根因、架构决策、命令用法、避坑记录。
-- `.agents/skills/remember/SKILL.md`：通用 remember skill，是 Codex 和 Gemini 可以直接发现的核心入口。
-- `.agents/skills/remember/scripts/save-learning.mjs`：保存学习笔记的辅助脚本，负责生成文件名、写入 Markdown、创建 git commit，并添加当前 Agent 的 `Co-authored-by:`。
-- `.claude/skills/remember/SKILL.md`：Claude Code 的适配入口。它不另起一套逻辑，而是指向 `.agents/skills/remember/` 的通用流程。
-- `.cursor/rules/remember.mdc`：Cursor 的规则适配入口。Cursor 没有完全相同的 skill 机制，所以通过 rule 告诉它使用同一个 remember 流程。
+- `.agents/skills/remember/SKILL.md`：通用 remember skill，是 Antigravity、Codex 和 Gemini 可以直接发现的核心入口。包含了通过 Here-Document 管道调用脚本的全局规范。
+- `.agents/skills/remember/scripts/save-learning.mjs`：保存学习笔记的辅助脚本。无论你在哪执行，它都会自动计算真实仓库根目录，接收 stdin 传入的正文，创建无污染的隔离 git commit。
+- `.claude/skills/remember/SKILL.md`：Claude Code 的适配入口。这是一个纯粹的代理（Proxy），强制指引 Claude 跨目录读取 `~/.agents/skills/remember/SKILL.md` 的通用流程。
+- `.cursor/rules/remember.mdc`：Cursor 的规则适配入口。也是代理规则，告诉 Cursor 跨目录读取 `~/.agents/...` 的通用流程文件，彻底消除逻辑冗余。
 
 ## 符号链接和安装的区别
 
