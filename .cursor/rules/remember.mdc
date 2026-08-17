@@ -5,7 +5,4 @@ alwaysApply: false
 
 # Remember Learning
 
-This is a proxy rule. When the user asks to remember or save a learning, you MUST first read the universal workflow instructions at:
-`~/.agents/skills/remember/SKILL.md`
-
-Strictly follow the instructions in that file to pipe the learning content via standard input (Here-Document) to the helper script. Do not invent your own execution steps.
+When the user asks to remember, learn, or save a learning, follow the canonical workflow in `~/.agents/skills/remember/SKILL.md` to pipe the markdown content to the helper script.

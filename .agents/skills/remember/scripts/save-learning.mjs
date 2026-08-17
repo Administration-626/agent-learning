@@ -8,28 +8,72 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const getRepoRoot = () => {
+export function getRepoRoot(startDir = __dirname) {
   const result = spawnSync('git', ['rev-parse', '--show-toplevel'], {
-    cwd: __dirname,
+    cwd: startDir,
     encoding: 'utf8'
   });
   if (result.status !== 0) {
     throw new Error('Could not determine git repository root.');
   }
   return result.stdout.trim();
-};
-
-const repoRoot = getRepoRoot();
-const learningsDir = path.join(repoRoot, 'learnings');
-
-function usage() {
-  console.error(`Usage:
-  save-learning.mjs --title "Title" --agent "Name <email>" [--commit] [--push] [--dry-run]
-
-The note body is read from stdin.`);
 }
 
-function parseArgs(argv) {
+export function localDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function slugify(title) {
+  const slug = title
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+    .replace(/-+$/g, '');
+
+  return slug || 'learning';
+}
+
+export function uniquePath(targetDir, date, slug) {
+  let filename = `${date}-${slug}.md`;
+  let filePath = path.join(targetDir, filename);
+  let counter = 2;
+
+  while (fs.existsSync(filePath)) {
+    filename = `${date}-${slug}-${counter}.md`;
+    filePath = path.join(targetDir, filename);
+    counter += 1;
+  }
+
+  return { filename, filePath };
+}
+
+export function agentLabel(agent) {
+  return agent.replace(/\s*<[^>]+>\s*$/, '').trim() || agent;
+}
+
+export function formatNote(title, date, agent, body) {
+  return `# ${title}
+
+Date: ${date}
+Agent: ${agentLabel(agent)}
+
+${body}
+`;
+}
+
+export function formatCommitMessage(title, agent) {
+  return `Add learning: ${title}
+
+Co-authored-by: ${agent}
+`;
+}
+
+export function parseArgs(argv) {
   const options = {
     title: '',
     agent: '',
@@ -51,8 +95,7 @@ function parseArgs(argv) {
     } else if (arg === '--dry-run') {
       options.dryRun = true;
     } else if (arg === '--help' || arg === '-h') {
-      usage();
-      process.exit(0);
+      return null;
     } else {
       throw new Error(`Unknown argument: ${arg}`);
     }
@@ -61,40 +104,14 @@ function parseArgs(argv) {
   return options;
 }
 
-function localDateString(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+function usage() {
+  console.error(`Usage:
+  save-learning.mjs --title "Title" --agent "Name <email>" [--commit] [--push] [--dry-run]
+
+The note body is read from stdin.`);
 }
 
-function slugify(title) {
-  const slug = title
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80)
-    .replace(/-+$/g, '');
-
-  return slug || 'learning';
-}
-
-function uniquePath(date, slug) {
-  let filename = `${date}-${slug}.md`;
-  let filePath = path.join(learningsDir, filename);
-  let counter = 2;
-
-  while (fs.existsSync(filePath)) {
-    filename = `${date}-${slug}-${counter}.md`;
-    filePath = path.join(learningsDir, filename);
-    counter += 1;
-  }
-
-  return { filename, filePath };
-}
-
-function runGit(args, options = {}) {
+export function runGit(args, repoRoot, options = {}) {
   const result = spawnSync('git', args, {
     cwd: repoRoot,
     encoding: 'utf8',
@@ -109,52 +126,45 @@ function runGit(args, options = {}) {
   return result.stdout.trim();
 }
 
-function agentLabel(agent) {
-  return agent.replace(/\s*<[^>]+>\s*$/, '').trim() || agent;
-}
+export function saveLearning({ title, agent, body, repoRoot, commit = false, push = false, dryRun = false }) {
+  if (!title) throw new Error('Title is required.');
+  if (!agent) throw new Error('Agent is required.');
 
-function main() {
-  const options = parseArgs(process.argv.slice(2));
-
-  if (!options.title || !options.agent) {
-    usage();
-    process.exit(1);
-  }
-
-  const body = fs.readFileSync(0, 'utf8').trim();
-  if (!body && !options.dryRun) {
+  const trimmedBody = (body || '').trim();
+  if (!trimmedBody && !dryRun) {
     throw new Error('Note body is empty. Provide Markdown content on stdin.');
   }
 
+  const resolvedRoot = repoRoot || getRepoRoot();
+  const learningsDir = path.join(resolvedRoot, 'learnings');
   const date = localDateString();
-  const slug = slugify(options.title);
-  const { filename, filePath } = uniquePath(date, slug);
-  const relativePath = path.relative(repoRoot, filePath);
-  const note = `# ${options.title}
+  const slug = slugify(title);
+  const { filename, filePath } = uniquePath(learningsDir, date, slug);
+  const relativePath = path.relative(resolvedRoot, filePath);
+  const noteContent = formatNote(title, date, agent, trimmedBody);
+  const commitMessage = formatCommitMessage(title, agent);
 
-Date: ${date}
-Agent: ${agentLabel(options.agent)}
-
-${body}
-`;
-
-  const commitMessage = `Add learning: ${options.title}
-
-Co-authored-by: ${options.agent}
-`;
-
-  if (options.dryRun) {
-    console.log(`Would write: ${filePath}`);
-    console.log(`Would commit with message:\n${commitMessage}`);
-    return;
+  if (dryRun) {
+    return {
+      dryRun: true,
+      filename,
+      filePath,
+      relativePath,
+      noteContent,
+      commitMessage,
+    };
   }
 
   fs.mkdirSync(learningsDir, { recursive: true });
-  fs.writeFileSync(filePath, note);
+  fs.writeFileSync(filePath, noteContent);
 
-  if (!options.commit) {
-    console.log(`Saved ${relativePath}`);
-    return;
+  if (!commit) {
+    return {
+      committed: false,
+      filename,
+      filePath,
+      relativePath,
+    };
   }
 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'remember-commit-'));
@@ -162,33 +172,66 @@ Co-authored-by: ${options.agent}
   fs.writeFileSync(messagePath, commitMessage);
 
   try {
-    runGit(['add', '--', relativePath]);
-    runGit(['commit', '-F', messagePath, '--', relativePath], { stdio: 'inherit' });
+    runGit(['add', '--', relativePath], resolvedRoot);
+    runGit(['commit', '-F', messagePath, '--', relativePath], resolvedRoot, { stdio: 'inherit' });
 
-    const commitHash = runGit(['rev-parse', '--short', 'HEAD']);
-    console.log(`Saved ${relativePath}`);
-    console.log(`Commit ${commitHash}`);
+    const commitHash = runGit(['rev-parse', '--short', 'HEAD'], resolvedRoot);
 
-    if (options.push) {
+    if (push) {
       const remote = spawnSync('git', ['remote', 'get-url', 'origin'], {
-        cwd: repoRoot,
+        cwd: resolvedRoot,
         encoding: 'utf8',
       });
 
       if (remote.status !== 0) {
         console.log('No origin remote configured; skipped push.');
       } else {
-        runGit(['push', 'origin', 'HEAD'], { stdio: 'inherit' });
+        runGit(['push', 'origin', 'HEAD'], resolvedRoot, { stdio: 'inherit' });
       }
     }
+
+    return {
+      committed: true,
+      commitHash,
+      filename,
+      filePath,
+      relativePath,
+    };
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 }
 
-try {
-  main();
-} catch (error) {
-  console.error(`remember: ${error.message}`);
-  process.exit(1);
+function main() {
+  const options = parseArgs(process.argv.slice(2));
+
+  if (!options || !options.title || !options.agent) {
+    usage();
+    process.exit(1);
+  }
+
+  const body = fs.readFileSync(0, 'utf8');
+  const result = saveLearning({
+    ...options,
+    body,
+  });
+
+  if (result.dryRun) {
+    console.log(`Would write: ${result.filePath}`);
+    console.log(`Would commit with message:\n${result.commitMessage}`);
+  } else {
+    console.log(`Saved ${result.relativePath}`);
+    if (result.committed) {
+      console.log(`Commit ${result.commitHash}`);
+    }
+  }
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  try {
+    main();
+  } catch (error) {
+    console.error(`remember: ${error.message}`);
+    process.exit(1);
+  }
 }
