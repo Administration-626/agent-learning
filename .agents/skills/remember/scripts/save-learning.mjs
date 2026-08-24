@@ -123,7 +123,7 @@ export function runGit(args, repoRoot, options = {}) {
     throw new Error(detail.trim());
   }
 
-  return result.stdout.trim();
+  return (result.stdout || '').trim();
 }
 
 export function saveLearning({ title, agent, body, repoRoot, commit = false, push = false, dryRun = false }) {
@@ -227,7 +227,7 @@ function main() {
   }
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+if (process.argv[1] && (fileURLToPath(import.meta.url) === path.resolve(process.argv[1]) || (fs.existsSync(process.argv[1]) && fileURLToPath(import.meta.url) === fs.realpathSync(process.argv[1])))) {
   try {
     main();
   } catch (error) {
